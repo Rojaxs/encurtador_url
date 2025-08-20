@@ -2,15 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { randomInt } from 'node:crypto';
 import { Url } from 'src/database/entities/url';
+import { JwtService } from '@nestjs/jwt';
 
 const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
 
-interface UrlDTO {
-  id?: number,
-  url?: string,
-  short_url?: string,
-  amount_of_access?: number
-}
 function randomHash(max = 6) {
   let hash = ''
   for (let i = 0; i < max; i++) {
@@ -21,9 +16,10 @@ function randomHash(max = 6) {
 
 @Injectable()
 export class AppService {
-  constructor(@InjectModel(Url) private readonly urlModel: typeof Url) {}
+  constructor(@InjectModel(Url) private readonly urlModel: typeof Url,
+  private jwtService: JwtService) {}
 
-  async create(url:string) {
+  async create(url:string, userid: number) {
     const now = new Date()
 
     const allUrls = await this.urlModel.findAll({
@@ -51,7 +47,7 @@ export class AppService {
     return this.urlModel.create({
       url: url,
       short_url: shortUrl,
-      user_id: 123,
+      user_id: userid,
       amount_of_access: 888,
       createdAt: now
     })
@@ -72,5 +68,12 @@ export class AppService {
     const realURL = getURLInfo.url
 
     return realURL
+  }
+  
+  async getUserInfoFromToken(request) {
+    const token = request.authorization.replace("Bearer ", "")
+    const tokenInfo = this.jwtService.verify(token);
+    const userId = tokenInfo.sub
+    return userId
   }
 }

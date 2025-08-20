@@ -3,6 +3,8 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { Url } from './database/entities/url';
 import { AppController } from './url/url.controller';
 import { AppService } from './url/url.service';
+import { AuthModule } from './auth/auth.module';
+import { User } from './database/entities/users';
 
 @Module({
   imports: [
@@ -18,8 +20,10 @@ import { AppService } from './url/url.service';
       define: { timestamps: false },
     }),
     SequelizeModule.forFeature([Url]),
+    SequelizeModule.forFeature([User]),
+    AuthModule
   ],
-  controllers: [AppController],   // <- precisa estar aqui
+  controllers: [AppController],
   providers: [AppService],
 })
 export class AppModule {}

@@ -1,19 +1,26 @@
 
 import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
+import { User } from 'src/database/entities/users';
 
-export type User = any;
+export type UserDTO = {
+  first_name?: string,
+  last_name?: string,
+  email?: string,
+  password?: string,
+  amount_of_urls?: number
+};
 
 @Injectable()
 export class UsersService {
-  private readonly users = [
-    {
-      userId: 1,
-      username: 'rojas',
-      password: 'admin',
-    },
-  ];
+  constructor(@InjectModel(User) private readonly userModel: typeof User) {}
 
-  async findOne(username: string): Promise<User | undefined> {
-    return this.users.find(user => user.username === username);
+  async findUser(email: string) {
+    return this.userModel.findOne({
+      where: {
+        email:email
+      },
+      raw: true
+    });
   }
 }

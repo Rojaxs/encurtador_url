@@ -1,6 +1,7 @@
 
 import { Sequelize } from 'sequelize-typescript';
 import { Url } from './entities/url';
+import { User } from './entities/users';
 
 export const databaseProviders = [
   {
@@ -17,7 +18,7 @@ export const databaseProviders = [
         define: { timestamps: false },
         timezone: '-03:00'
       });
-      sequelize.addModels([Url]);
+      sequelize.addModels([Url, User]);
       await sequelize.sync();
       return sequelize;
     },
