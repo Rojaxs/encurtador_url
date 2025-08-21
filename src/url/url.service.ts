@@ -1,8 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { randomInt } from 'node:crypto';
 import { Url } from 'src/database/entities/url';
-import { JwtService } from '@nestjs/jwt';
 
 const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
 
@@ -16,8 +15,7 @@ function randomHash(max = 6) {
 
 @Injectable()
 export class AppService {
-  constructor(@InjectModel(Url) private readonly urlModel: typeof Url,
-  private jwtService: JwtService) {}
+  constructor(@InjectModel(Url) private readonly urlModel: typeof Url) {}
 
   async create(url:string, userid: number) {
     const now = new Date()
@@ -48,7 +46,7 @@ export class AppService {
       url: url,
       short_url: shortUrl,
       user_id: userid,
-      amount_of_access: 888,
+      amount_of_access: 0,
       createdAt: now
     })
     
@@ -61,19 +59,35 @@ export class AppService {
       },
       raw:true
     })
-
     if(!getURLInfo) {
-      return "Url não encontrada"
+      throw new NotFoundException('Url não encontrada');
     }
-    const realURL = getURLInfo.url
 
-    return realURL
+    await this.urlModel.update(
+      { amount_of_access: getURLInfo.amount_of_access + 1 },
+      { where: {
+        short_url: hash
+      },
+    })
+
+    return getURLInfo.url
   }
-  
-  async getUserInfoFromToken(request) {
-    const token = request.authorization.replace("Bearer ", "")
-    const tokenInfo = this.jwtService.verify(token);
-    const userId = tokenInfo.sub
-    return userId
+
+  async analytics() {
+    const data = await this.urlModel.findAll({
+      raw: true
+    })
+    let totalAmount = 0
+
+    for (let i = 0; i < data.length; i++) {
+      totalAmount += data[i].amount_of_access;
+    }
+
+    data.sort((a,b) => b.amount_of_access - a.amount_of_access)
+
+    return {
+      total_amount_of_access: totalAmount,
+      url_ranked_by_access: data
+    }
   }
 }
